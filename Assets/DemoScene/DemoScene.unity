@@ -132,6 +132,7 @@ GameObject:
   m_Component:
   - component: {fileID: 835203641}
   - component: {fileID: 835203640}
+  - component: {fileID: 835203642}
   m_Layer: 0
   m_Name: PrecipitationSystem
   m_TagString: Untagged
@@ -167,6 +168,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &835203642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 835203639}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2edae8f07256fa24eb948215464f67b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  meshSubdivisions: 200
 --- !u!1 &1881932691
 GameObject:
   m_ObjectHideFlags: 0
@@ -245,7 +259,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1881932691}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.35, y: 2.2, z: -5.7}
+  m_LocalPosition: {x: -2.35, y: 2.2, z: -6.35}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

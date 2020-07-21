@@ -1,6 +1,10 @@
-﻿using System.Collections.Generic;
+﻿/*
+    Precipitation Manager
+*/
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 [ExecuteInEditMode] 
 public class PrecipitationManager : MonoBehaviour 
@@ -9,7 +13,22 @@ public class PrecipitationManager : MonoBehaviour
     [Range(2, 256)] public int meshSubdivisions = 200;
 
     GridHandler gridHandler;
+    Matrix4x4[] renderMatrices = new Matrix4x4[3 * 3 * 3];
+		
     Mesh meshToDraw;
+
+    Material rainMaterial, snowMaterial;
+    // automatic material creation
+    static Material CreateMaterialIfNull(string shaderName, ref Material reference) {
+        if (reference == null) {
+            reference = new Material(Shader.Find(shaderName));
+            reference.hideFlags = HideFlags.HideAndDontSave;
+            reference.renderQueue = 3000;
+            reference.enableInstancing = true;
+        }
+        return reference;
+    }
+
 
     void OnEnable () {
         gridHandler = GetComponent<GridHandler>();
@@ -20,8 +39,31 @@ public class PrecipitationManager : MonoBehaviour
         gridHandler.onPlayerGridChange -= OnPlayerGridChange;
     }
     
+    /*
+        set all our render matrices to be positioned
+        in a 3x3x3 grid around the player
+    */
     void OnPlayerGridChange(Vector3Int playerGrid) {
-        
+
+        // index for each individual matrix
+        int i = 0;
+
+        // loop in a 3 x 3 x 3 grid
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                for (int z = -1; z <= 1; z++) {
+
+                    Vector3Int neighborOffset = new Vector3Int(x, y, z);
+                    
+                    // adjust the rendering position matrix, leaving rotation and scale alone
+                    renderMatrices[i++].SetTRS(
+                        gridHandler.GetGridCenter(playerGrid + neighborOffset), 
+                        Quaternion.identity, 
+                        Vector3.one
+                    );
+                }
+            }
+        }
     }
 
     void Update()
@@ -30,7 +72,19 @@ public class PrecipitationManager : MonoBehaviour
         if (meshToDraw == null)
             RebuildPrecipitationMesh();
 
+
+        // render the rain and snow
+        RenderEnvironmentParticles(CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial));
+        RenderEnvironmentParticles(CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial));
     }
+
+    void RenderEnvironmentParticles(Material material) {
+            
+        material.SetFloat("_GridSize", gridHandler.gridSize);
+     
+        Graphics.DrawMeshInstanced(meshToDraw, 0, material, renderMatrices, renderMatrices.Length, null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off);
+    }
+
 
     // the mesh created has a 
     // center at [0,0], 
