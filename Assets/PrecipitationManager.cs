@@ -9,8 +9,52 @@ using UnityEngine.Rendering;
 [ExecuteInEditMode] 
 public class PrecipitationManager : MonoBehaviour 
 {
+    [System.Serializable] public class EnvironmentParticlesSettings
+    {
+        [Range(0, 1)] public float amount = 1.0f;
+        public Color color = Color.white;
+
+        [Tooltip("Alpha = variation amount")]
+        public Color colorVariation = Color.white;
+        public float fallSpeed;
+        public Vector2 cameraRange; 
+        public Vector2 flutterFrequency;
+        public Vector2 flutterSpeed;
+        public Vector2 flutterMagnitude;
+        public Vector2 sizeRange;
+        
+        public EnvironmentParticlesSettings (Color color, Color colorVariation, float fallSpeed, Vector2 cameraRange, Vector2 flutterFrequency, Vector2 flutterSpeed, Vector2 flutterMagnitude, Vector2 sizeRange) {
+            this.color = color;
+            this.colorVariation = colorVariation;
+            this.fallSpeed = fallSpeed;
+            this.cameraRange = cameraRange;
+            this.flutterFrequency = flutterFrequency;
+            this.flutterSpeed = flutterSpeed;
+            this.flutterMagnitude = flutterMagnitude;
+            this.sizeRange = sizeRange;
+        }
+    }
     // 65536 (256 x 256) vertices is the max per mesh
     [Range(2, 256)] public int meshSubdivisions = 200;
+
+    // populate the settings with some initial values
+    public EnvironmentParticlesSettings rain = new EnvironmentParticlesSettings(
+        Color.white, Color.white, 3,  // color, colorVariation, fall speed
+        new Vector2(0,15), //camera range
+        new Vector2(0.988f, 1.234f), //flutter frequency
+        new Vector2(.01f, .01f), //flutter speed
+        new Vector2(.35f, .25f), //flutter magnitude
+        new Vector2(.5f, 1f)//, //size range 
+    );
+    
+    public EnvironmentParticlesSettings snow = new EnvironmentParticlesSettings(	
+        Color.white, Color.white, .25f,  // color, colorVariation, fall speed
+        new Vector2(0,10), //camera range
+        new Vector2(0.988f, 1.234f), //flutter frequency
+        new Vector2(1f, .5f), //flutter speed
+        new Vector2(.35f, .25f), //flutter magnitude
+        new Vector2(.05f, .025f)//, //size range 
+    );
 
     GridHandler gridHandler;
     Matrix4x4[] renderMatrices = new Matrix4x4[3 * 3 * 3];
@@ -74,14 +118,31 @@ public class PrecipitationManager : MonoBehaviour
 
 
         // render the rain and snow
-        RenderEnvironmentParticles(CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial));
-        RenderEnvironmentParticles(CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial));
+        RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial));
+        RenderEnvironmentParticles(snow, CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial));
     }
 
-    void RenderEnvironmentParticles(Material material) {
-            
+    void RenderEnvironmentParticles(EnvironmentParticlesSettings settings, Material material) {
+
+        // if the amount is 0, dont render anything
+        if (settings.amount <= 0)
+            return;
+
         material.SetFloat("_GridSize", gridHandler.gridSize);
-     
+        
+        material.SetFloat("_Amount", settings.amount);
+
+
+        material.SetColor("_Color", settings.color);
+        material.SetColor("_ColorVariation", settings.colorVariation);
+        material.SetFloat("_FallSpeed", settings.fallSpeed);
+        material.SetVector("_FlutterFrequency", settings.flutterFrequency);
+        material.SetVector("_FlutterSpeed", settings.flutterSpeed);
+        material.SetVector("_FlutterMagnitude", settings.flutterMagnitude);
+        material.SetVector("_CameraRange", settings.cameraRange);
+        material.SetVector("_SizeRange", settings.sizeRange);
+
+            
         Graphics.DrawMeshInstanced(meshToDraw, 0, material, renderMatrices, renderMatrices.Length, null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off);
     }
 
@@ -110,7 +171,16 @@ public class PrecipitationManager : MonoBehaviour
 
                 vertices.Add(new Vector3(x01 - .5f, 0, y01 - .5f));
 
-                uvs.Add(new Vector3(x01, y01, 0.0f));
+
+                // calcualte the threshold for this vertex
+                // to recreate the 'thinning out' effect
+                float vertexIntensityThreshold = Mathf.Max(
+                    (float)((x / f) % 4.0f) / 4.0f, 
+                    (float)((y / f) % 4.0f) / 4.0f
+                );
+
+                // store the `vertexIntensityThreshold` value as the z component in the uv's
+                uvs.Add(new Vector3(x01, y01, vertexIntensityThreshold));
 
                 indicies.Add(i++);
             }    

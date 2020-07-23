@@ -5,6 +5,8 @@
 #include "UnityCG.cginc"
 
 float _GridSize;
+float _Amount;
+
 
 struct MeshData {
     float4 vertex : POSITION;
@@ -80,6 +82,14 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     // make sure the position is spread out across the entire grid, the original vertex position
     // is normalized to a plane in the -.5 to .5 range
     pos.xz *= _GridSize;
+
+
+    // mesh vertices cull rendering based on a pattern
+    // and the particles `amount` to simulate 'thinning out'
+    float vertexAmountThreshold = meshData.uv.z;
+    if (vertexAmountThreshold > _Amount)
+        return;
+
     
     
     // make sure the position originates from the top of the local grid
@@ -89,9 +99,9 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
     // temporary values
     float colorVariation = 0;
-    float2 quadSize = float2(.1, .1);
+    float2 quadSize = float2(.05, .05);
 
-    float3 normal = float3(0,1,0);
+    float3 normal = float3(0,0,1);
     float3 topMiddle = pos + normal * quadSize.y;
     float3 rightDirection = float3(.5 * quadSize.x, 0, 0);
     
