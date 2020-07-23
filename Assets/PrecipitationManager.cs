@@ -34,6 +34,10 @@ public class PrecipitationManager : MonoBehaviour
             this.sizeRange = sizeRange;
         }
     }
+
+    public Texture2D mainTexture;
+    public Texture2D noiseTexture;
+		
     // 65536 (256 x 256) vertices is the max per mesh
     [Range(2, 256)] public int meshSubdivisions = 200;
 
@@ -128,10 +132,14 @@ public class PrecipitationManager : MonoBehaviour
         if (settings.amount <= 0)
             return;
 
+
+        material.SetTexture("_MainTex", mainTexture);
+        material.SetTexture("_NoiseTex", noiseTexture);  
+
+
         material.SetFloat("_GridSize", gridHandler.gridSize);
         
         material.SetFloat("_Amount", settings.amount);
-
 
         material.SetColor("_Color", settings.color);
         material.SetColor("_ColorVariation", settings.colorVariation);

@@ -4,6 +4,8 @@
 
 #include "UnityCG.cginc"
 
+sampler2D _NoiseTex;
+
 float _GridSize;
 float _Amount;
 
@@ -79,14 +81,27 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     // the position of the snowflake / raindrop
     float3 pos = meshData.vertex.xyz;
 
+
     // make sure the position is spread out across the entire grid, the original vertex position
     // is normalized to a plane in the -.5 to .5 range
     pos.xz *= _GridSize;
+
+    // samples 2 seperate noise values so we get some variation
+    float2 noise = float2(
+        frac(tex2Dlod(_NoiseTex, float4(meshData.uv.xy    , 0, 0)).r + (pos.x + pos.z)), 
+        frac(tex2Dlod(_NoiseTex, float4(meshData.uv.yx * 2, 0, 0)).r + (pos.x * pos.z))
+    );
+    
+    
 
 
     // mesh vertices cull rendering based on a pattern
     // and the particles `amount` to simulate 'thinning out'
     float vertexAmountThreshold = meshData.uv.z;
+
+    // add some noise to the vertex threshold
+    vertexAmountThreshold *= noise.y;
+
     if (vertexAmountThreshold > _Amount)
         return;
 
@@ -96,6 +111,18 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     pos.y += _GridSize * .5;
 
     float opacity = 1.0;
+
+    // fade out as the amount reaches the limit for this vertex threshold
+    #define VERTEX_THRESHOLD_LEVELS 4
+    float vertexAmountThresholdFade = min((_Amount - vertexAmountThreshold) * VERTEX_THRESHOLD_LEVELS, 1);
+    opacity *= vertexAmountThresholdFade;
+        
+    if (opacity <= 0)
+        return;
+
+
+
+
 
     // temporary values
     float colorVariation = 0;
@@ -112,6 +139,9 @@ float4 frag(g2f IN) : SV_Target
 {
     float4 color = float4(IN.uv.xy, 0, 1);
 
+    // apply opacity
+    color.a *= IN.uv.z;
+    
     return color;
 }
 
