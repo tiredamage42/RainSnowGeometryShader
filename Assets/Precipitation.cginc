@@ -201,11 +201,23 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
 
 
-    // change the normal so the quad is upright for now
+
+#if defined (RAIN)
+    // what we had before
     float3 normal = float3(0, 1, 0);
     float3 topMiddle = pos + normal * quadSize.y;
     float3 rightDirection = float3(.5 * quadSize.x, 0, 0);
     
+#else
+    // snow is billboarded, that means the quad always faces the camera
+    float3 normal = UNITY_MATRIX_IT_MV[1].xyz;
+    float3 topMiddle = pos + normal * quadSize.y;
+    float3 rightDirection = UNITY_MATRIX_IT_MV[0].xyz * .5 * quadSize.x;
+#endif
+
+
+
+
     CreateQuad (stream, pos, topMiddle, rightDirection, colorVariation, opacity);
 }
 

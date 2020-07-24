@@ -180,7 +180,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2edae8f07256fa24eb948215464f67b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mainTexture: {fileID: 2800000, guid: 1571069739ee02a45874735fa640406c, type: 3}
+  noiseTexture: {fileID: 2800000, guid: 0d2baf31e44f6944a9b939c20d1c2157, type: 3}
   meshSubdivisions: 200
+  rain:
+    amount: 0
+    color: {r: 1, g: 1, b: 1, a: 1}
+    colorVariation: {r: 1, g: 1, b: 1, a: 1}
+    fallSpeed: 3
+    cameraRange: {x: 0, y: 15}
+    flutterFrequency: {x: 0.988, y: 1.234}
+    flutterSpeed: {x: 0.01, y: 0.01}
+    flutterMagnitude: {x: 0.35, y: 0.25}
+    sizeRange: {x: 0.5, y: 1}
+  snow:
+    amount: 1
+    color: {r: 0.4481132, g: 1, b: 0.47192118, a: 1}
+    colorVariation: {r: 1, g: 0, b: 0.13239145, a: 1}
+    fallSpeed: 0.25
+    cameraRange: {x: 0, y: 10}
+    flutterFrequency: {x: 0.988, y: 1.234}
+    flutterSpeed: {x: 1, y: 0.5}
+    flutterMagnitude: {x: 0.35, y: 0.25}
+    sizeRange: {x: 0.05, y: 0.025}
 --- !u!1 &1881932691
 GameObject:
   m_ObjectHideFlags: 0
