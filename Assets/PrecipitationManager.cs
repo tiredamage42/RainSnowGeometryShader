@@ -1,13 +1,9 @@
-﻿/*
-    Precipitation Manager
-*/
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
 
-[ExecuteInEditMode] 
-public class PrecipitationManager : MonoBehaviour 
+[ExecuteInEditMode] public class PrecipitationManager : MonoBehaviour 
 {
     [System.Serializable] public class EnvironmentParticlesSettings
     {
@@ -18,12 +14,16 @@ public class PrecipitationManager : MonoBehaviour
         public Color colorVariation = Color.white;
         public float fallSpeed;
         public Vector2 cameraRange; 
-        public Vector2 flutterFrequency;
-        public Vector2 flutterSpeed;
-        public Vector2 flutterMagnitude;
+        public Vector2 flutterFrequency, flutterSpeed, flutterMagnitude;
         public Vector2 sizeRange;
         
-        public EnvironmentParticlesSettings (Color color, Color colorVariation, float fallSpeed, Vector2 cameraRange, Vector2 flutterFrequency, Vector2 flutterSpeed, Vector2 flutterMagnitude, Vector2 sizeRange) {
+        public EnvironmentParticlesSettings (
+            Color color, Color colorVariation, 
+            float fallSpeed, Vector2 cameraRange, 
+            Vector2 flutterFrequency, Vector2 flutterSpeed, Vector2 flutterMagnitude, 
+            Vector2 sizeRange
+        ) {
+            
             this.color = color;
             this.colorVariation = colorVariation;
             this.fallSpeed = fallSpeed;
@@ -40,7 +40,6 @@ public class PrecipitationManager : MonoBehaviour
 
     [Range(0,1)] public float windStrength;
     [Range(-180,180)] public float windYRotation;
-
 		
     // 65536 (256 x 256) vertices is the max per mesh
     [Range(2, 256)] public int meshSubdivisions = 200;
@@ -80,7 +79,6 @@ public class PrecipitationManager : MonoBehaviour
         }
         return reference;
     }
-
 
     void OnEnable () {
         gridHandler = GetComponent<GridHandler>();
@@ -135,8 +133,9 @@ public class PrecipitationManager : MonoBehaviour
         );
 
         // we need to supply the shader with the rotation matrix so it can "fall" in the correct direction
-        Matrix4x4 windRotationMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(windRotationEulerAngles), Vector3.one);
-
+        Matrix4x4 windRotationMatrix = Matrix4x4.TRS(
+            Vector3.zero, Quaternion.Euler(windRotationEulerAngles), Vector3.one
+        );
 			
         /*
             when falling straight down, the max travel distance of a particle is
@@ -153,10 +152,7 @@ public class PrecipitationManager : MonoBehaviour
             cos(a) = gridSize / maxTravelDistance 
             maxTravelDistance = gridSize / cos(a)
         */
-
         float maxTravelDistance = gridHandler.gridSize / Mathf.Cos(windStrengthAngle * Mathf.Deg2Rad);
-
-
 
         // render the rain and snow
         RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial), maxTravelDistance, windRotationMatrix);
@@ -169,10 +165,8 @@ public class PrecipitationManager : MonoBehaviour
         if (settings.amount <= 0)
             return;
 
-
         material.SetTexture("_MainTex", mainTexture);
         material.SetTexture("_NoiseTex", noiseTexture);  
-
 
         material.SetFloat("_GridSize", gridHandler.gridSize);
         
@@ -189,14 +183,13 @@ public class PrecipitationManager : MonoBehaviour
 
         material.SetFloat("_MaxTravelDistance", maxTravelDistance);
 
-
         material.SetMatrix("_WindRotationMatrix", windRotationMatrix);
-            
-
-            
-        Graphics.DrawMeshInstanced(meshToDraw, 0, material, renderMatrices, renderMatrices.Length, null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off);
+                        
+        Graphics.DrawMeshInstanced(
+            meshToDraw, 0, material, renderMatrices, renderMatrices.Length, 
+            null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off
+        );
     }
-
 
     // the mesh created has a 
     // center at [0,0], 
@@ -221,7 +214,6 @@ public class PrecipitationManager : MonoBehaviour
                 float y01 = y / 100.0f;
 
                 vertices.Add(new Vector3(x01 - .5f, 0, y01 - .5f));
-
 
                 // calcualte the threshold for this vertex
                 // to recreate the 'thinning out' effect
