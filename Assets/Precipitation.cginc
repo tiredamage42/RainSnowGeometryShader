@@ -4,6 +4,7 @@
 
 #include "UnityCG.cginc"
 
+sampler2D _MainTex;
 sampler2D _NoiseTex;
 
 float _GridSize;
@@ -16,6 +17,12 @@ float _MaxTravelDistance;
 float2 _FlutterFrequency;
 float2 _FlutterSpeed;
 float2 _FlutterMagnitude;
+
+
+float4 _Color;
+float4 _ColorVariation;
+float2 _SizeRange; 
+
 
 
 struct MeshData {
@@ -184,11 +191,15 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
 
 
+    // calculate the color variation based on the position, time, and some randomness
+    // and multiply it by the amount the user specified (in the color variation alpha channel)
+    // (from speed tree)
+    float colorVariation = (sin(noise.x * (pos.x + pos.y * noise.y + pos.z + _Time.y * 2)) * .5 + .5) * _ColorVariation.a;
+    
+    // choose a size multiplier randomly
+    float2 quadSize = lerp(_SizeRange.x, _SizeRange.y, noise.x);
 
 
-    // temporary values
-    float colorVariation = 0;
-    float2 quadSize = float2(.05, .05);
 
     // change the normal so the quad is upright for now
     float3 normal = float3(0, 1, 0);
@@ -200,7 +211,16 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
 float4 frag(g2f IN) : SV_Target
 {
-    float4 color = float4(IN.uv.xy, 0, 1);
+    // samples the texture and modify its color
+    float4 color = tex2D(_MainTex, IN.uv.xy) * _Color;
+
+    // add hue variation (taken from speed tree)
+    float colorVariationAmount = IN.uv.w;
+    float3 shiftedColor = lerp(color.rgb, _ColorVariation.rgb, colorVariationAmount);
+    float maxBase = max(color.r, max(color.g, color.b));
+    float newMaxBase = max(shiftedColor.r, max(shiftedColor.g, shiftedColor.b));
+    // preserve vibrance
+    color.rgb = saturate(shiftedColor * ((maxBase/newMaxBase) * 0.5 + 0.5));
 
     // apply opacity
     color.a *= IN.uv.z;
