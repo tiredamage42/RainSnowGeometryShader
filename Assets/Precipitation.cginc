@@ -4,6 +4,24 @@
 
 #include "UnityCG.cginc"
 
+
+#if defined (RAIN)
+// creates a rotation matrix around the axis of 90 degrees
+// (only needded for the second rain quad)
+float4x4 rotationMatrix90(float3 axis) {    
+    float ocxy = axis.x * axis.y;
+    float oczx = axis.z * axis.x;
+    float ocyz = axis.y * axis.z;
+    return float4x4(
+        axis.x * axis.x, ocxy - axis.z, oczx + axis.y, 0.0,
+        ocxy + axis.z, axis.y * axis.y, ocyz - axis.x, 0.0,
+        oczx - axis.y, ocyz + axis.x, axis.z * axis.z, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+}
+#endif
+
+
 sampler2D _MainTex;
 sampler2D _NoiseTex;
 
@@ -203,7 +221,9 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
 
 #if defined (RAIN)
-    // what we had before
+    // rain is skinny along the x axis
+    quadSize.x *= .01;
+
     float3 normal = float3(0, 1, 0);
     float3 topMiddle = pos + normal * quadSize.y;
     float3 rightDirection = float3(.5 * quadSize.x, 0, 0);
@@ -219,6 +239,13 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
 
     CreateQuad (stream, pos, topMiddle, rightDirection, colorVariation, opacity);
+
+#if defined (RAIN)
+    // rain draws 2 quads perpendicular to eachotehr
+    rightDirection = mul((float3x3)rotationMatrix90(normal), rightDirection);
+    CreateQuad (stream, pos, topMiddle, rightDirection, colorVariation, opacity);
+#endif
+
 }
 
 float4 frag(g2f IN) : SV_Target
