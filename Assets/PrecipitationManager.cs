@@ -121,12 +121,15 @@ public class PrecipitationManager : MonoBehaviour
             RebuildPrecipitationMesh();
 
 
+        float maxTravelDistance = gridHandler.gridSize;
+
+
         // render the rain and snow
-        RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial));
-        RenderEnvironmentParticles(snow, CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial));
+        RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial), maxTravelDistance);
+        RenderEnvironmentParticles(snow, CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial), maxTravelDistance);
     }
 
-    void RenderEnvironmentParticles(EnvironmentParticlesSettings settings, Material material) {
+    void RenderEnvironmentParticles(EnvironmentParticlesSettings settings, Material material, float maxTravelDistance) {
 
         // if the amount is 0, dont render anything
         if (settings.amount <= 0)
@@ -149,6 +152,11 @@ public class PrecipitationManager : MonoBehaviour
         material.SetVector("_FlutterMagnitude", settings.flutterMagnitude);
         material.SetVector("_CameraRange", settings.cameraRange);
         material.SetVector("_SizeRange", settings.sizeRange);
+
+
+
+
+        material.SetFloat("_MaxTravelDistance", maxTravelDistance);
 
             
         Graphics.DrawMeshInstanced(meshToDraw, 0, material, renderMatrices, renderMatrices.Length, null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off);

@@ -8,6 +8,11 @@ sampler2D _NoiseTex;
 
 float _GridSize;
 float _Amount;
+float2 _CameraRange;
+
+float _FallSpeed;
+float _MaxTravelDistance;
+
 
 
 struct MeshData {
@@ -104,13 +109,60 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
 
     if (vertexAmountThreshold > _Amount)
         return;
+    
+
+
+    // "falling down" movement
+    // add 10000 to the time variable so it starts out `prebaked`
+    // modify the movespeed by a random factor as well
+    pos.y -= (_Time.y + 10000) * (_FallSpeed + (_FallSpeed * noise.y));
+
+    // make sure the particles "loops" around back to the top once it reaches the
+    // max travel distance (+ some noise for randomness)
+    pos.y = fmod(pos.y, -_MaxTravelDistance) + noise.x;
 
     
     
     // make sure the position originates from the top of the local grid
     pos.y += _GridSize * .5;
 
+
+    // calculate the world space position of the particles
+    float3 worldPos = pos + float3(
+        unity_ObjectToWorld[0].w, 
+        unity_ObjectToWorld[1].w, 
+        unity_ObjectToWorld[2].w
+    );
+
+    // the direction from the position to the camera
+    float3 pos2Camera = worldPos - _WorldSpaceCameraPos;
+    float distanceToCamera = length(pos2Camera);
+    
+    // normalize pos2Camera direction
+    pos2Camera /= distanceToCamera;
+
+    // calculate the camera's forward direction
+    float3 camForward = normalize(mul((float3x3)unity_CameraToWorld, float3(0,0,1)));
+
+    // if the angle between the direction to camera and it's forward are too large
+    // then the camera is facign away, so don't draw
+    if (dot(camForward, pos2Camera) < 0.5)
+        return;
+
+
+
+
+
+
+
     float opacity = 1.0;
+
+    // produces a value between 0 and 1 corresponding to where the distance to camera is within
+    // the Camera Distance range (1 when at or below minimum, 0 when at or above maximum)
+    // this way the particle fades out as it get's too far, and doesnt just pop out of existence
+    float camDistanceInterpolation = 1.0 - min(max(distanceToCamera - _CameraRange.x, 0) / (_CameraRange.y - _CameraRange.x), 1);
+    opacity *= camDistanceInterpolation;
+
 
     // fade out as the amount reaches the limit for this vertex threshold
     #define VERTEX_THRESHOLD_LEVELS 4
@@ -128,7 +180,8 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     float colorVariation = 0;
     float2 quadSize = float2(.05, .05);
 
-    float3 normal = float3(0,0,1);
+    // change the normal so the quad is upright for now
+    float3 normal = float3(0, 1, 0);
     float3 topMiddle = pos + normal * quadSize.y;
     float3 rightDirection = float3(.5 * quadSize.x, 0, 0);
     
@@ -141,7 +194,7 @@ float4 frag(g2f IN) : SV_Target
 
     // apply opacity
     color.a *= IN.uv.z;
-    
+
     return color;
 }
 
