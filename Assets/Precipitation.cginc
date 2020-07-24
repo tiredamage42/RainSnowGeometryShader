@@ -42,6 +42,8 @@ float4 _ColorVariation;
 float2 _SizeRange; 
 
 
+float4x4 _WindRotationMatrix;
+
 
 struct MeshData {
     float4 vertex : POSITION;
@@ -138,8 +140,14 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     if (vertexAmountThreshold > _Amount)
         return;
     
+    // cast the wind rotation matrix, since we only need it to 
+    // multiply 3 component vectors
+    float3x3 windRotation = (float3x3)_WindRotationMatrix;
 
-
+    
+    // cache the offset we get from rotatting the particle with the wind
+    float3 rotatedVertexOffset = mul(windRotation, pos) - pos;
+    
     // "falling down" movement
     // add 10000 to the time variable so it starts out `prebaked`
     // modify the movespeed by a random factor as well
@@ -153,9 +161,15 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     
 
     // make sure the particles "loops" around back to the top once it reaches the
-    // max travel distance (+ some noise for randomness)
+    // max travel distance (+ some noise for randomness) 
     pos.y = fmod(pos.y, -_MaxTravelDistance) + noise.x;
 
+    // rotate the position so the "travel direction" is where it would be
+    // relative to the wind
+    pos = mul(windRotation, pos);
+    
+    // this rotates the entire mesh quad, so we counteract that tilt
+    pos -= rotatedVertexOffset;
     
     
     // make sure the position originates from the top of the local grid
@@ -204,6 +218,7 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     float vertexAmountThresholdFade = min((_Amount - vertexAmountThreshold) * VERTEX_THRESHOLD_LEVELS, 1);
     opacity *= vertexAmountThresholdFade;
         
+
     if (opacity <= 0)
         return;
 
@@ -224,7 +239,9 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     // rain is skinny along the x axis
     quadSize.x *= .01;
 
-    float3 normal = float3(0, 1, 0);
+    // rain is stretched in the direction of the wind
+    float3 normal = mul(windRotation, float3(0,1,0));
+    
     float3 topMiddle = pos + normal * quadSize.y;
     float3 rightDirection = float3(.5 * quadSize.x, 0, 0);
     

@@ -37,6 +37,10 @@ public class PrecipitationManager : MonoBehaviour
 
     public Texture2D mainTexture;
     public Texture2D noiseTexture;
+
+    [Range(0,1)] public float windStrength;
+    [Range(-180,180)] public float windYRotation;
+
 		
     // 65536 (256 x 256) vertices is the max per mesh
     [Range(2, 256)] public int meshSubdivisions = 200;
@@ -120,16 +124,46 @@ public class PrecipitationManager : MonoBehaviour
         if (meshToDraw == null)
             RebuildPrecipitationMesh();
 
+        // the higher the windstrength, the more the precipitation
+        // "leans" in the direction of the wind (with a max lean angle of 45 degrees)
+        float windStrengthAngle = Mathf.Lerp(0, 45, windStrength);
 
-        float maxTravelDistance = gridHandler.gridSize;
+        Vector3 windRotationEulerAngles = new Vector3(
+            -windStrengthAngle,
+            windYRotation,
+            0
+        );
+
+        // we need to supply the shader with the rotation matrix so it can "fall" in the correct direction
+        Matrix4x4 windRotationMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(windRotationEulerAngles), Vector3.one);
+
+			
+        /*
+            when falling straight down, the max travel distance of a particle is
+            the grid size.  but when we account for the wind angle, we have to consider
+            the max travel distance the hypotenuse of a right triangle with it's adjacent
+            side as the grid size
+
+                    |\
+                    |a\         
+        gridSize  |  \
+                    |   \
+                    |    \
+
+            cos(a) = gridSize / maxTravelDistance 
+            maxTravelDistance = gridSize / cos(a)
+        */
+
+        float maxTravelDistance = gridHandler.gridSize / Mathf.Cos(windStrengthAngle * Mathf.Deg2Rad);
+
 
 
         // render the rain and snow
-        RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial), maxTravelDistance);
-        RenderEnvironmentParticles(snow, CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial), maxTravelDistance);
+        RenderEnvironmentParticles(rain, CreateMaterialIfNull("Hidden/Environment/Rain", ref rainMaterial), maxTravelDistance, windRotationMatrix);
+        RenderEnvironmentParticles(snow, CreateMaterialIfNull("Hidden/Environment/Snow", ref snowMaterial), maxTravelDistance, windRotationMatrix);
     }
 
-    void RenderEnvironmentParticles(EnvironmentParticlesSettings settings, Material material, float maxTravelDistance) {
+    void RenderEnvironmentParticles(EnvironmentParticlesSettings settings, Material material, float maxTravelDistance, Matrix4x4 windRotationMatrix) {
 
         // if the amount is 0, dont render anything
         if (settings.amount <= 0)
@@ -153,10 +187,11 @@ public class PrecipitationManager : MonoBehaviour
         material.SetVector("_CameraRange", settings.cameraRange);
         material.SetVector("_SizeRange", settings.sizeRange);
 
-
-
-
         material.SetFloat("_MaxTravelDistance", maxTravelDistance);
+
+
+        material.SetMatrix("_WindRotationMatrix", windRotationMatrix);
+            
 
             
         Graphics.DrawMeshInstanced(meshToDraw, 0, material, renderMatrices, renderMatrices.Length, null, ShadowCastingMode.Off, true, 0, null, LightProbeUsage.Off);
