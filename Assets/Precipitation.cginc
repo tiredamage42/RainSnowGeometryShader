@@ -13,6 +13,9 @@ float2 _CameraRange;
 float _FallSpeed;
 float _MaxTravelDistance;
 
+float2 _FlutterFrequency;
+float2 _FlutterSpeed;
+float2 _FlutterMagnitude;
 
 
 struct MeshData {
@@ -116,6 +119,13 @@ void geom(point MeshData IN[1], inout TriangleStream<g2f> stream)
     // add 10000 to the time variable so it starts out `prebaked`
     // modify the movespeed by a random factor as well
     pos.y -= (_Time.y + 10000) * (_FallSpeed + (_FallSpeed * noise.y));
+
+
+    // Add random noise while travelling based on time, some randomness, and "distance travelled"
+    float2 inside = pos.y * noise.yx * _FlutterFrequency + ((_FlutterSpeed + (_FlutterSpeed * noise)) * _Time.y);
+    float2 flutter = float2(sin(inside.x), cos(inside.y)) * _FlutterMagnitude;
+    pos.xz += flutter;
+    
 
     // make sure the particles "loops" around back to the top once it reaches the
     // max travel distance (+ some noise for randomness)
